@@ -10,20 +10,21 @@ class Crud extends StatefulWidget {
 }
 
 class _CrudState extends State<Crud> {
-  String url = 'https://eo2nzlcrlpp5fp7.m.pipedream.net';
+  String url = 'https://6823470765ba0580339612e1.mockapi.io/crud/post';
   String responseMessage = '';
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
   List<dynamic> users = [];
   bool isLoading = false;
 
   Future<void> getUsers() async {
-    final baseurl = Uri.parse('https://jsonplaceholder.typicode.com/posts');
     setState(() {
       isLoading = true;
     });
 
     try {
-      final response = await http.get(baseurl);
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         setState(() {
           users = jsonDecode(response.body);
@@ -45,14 +46,16 @@ class _CrudState extends State<Crud> {
   }
 
   Future<void> addUsers(String name, String email) async {
-    final response = await http.post(Uri.parse(url),
+    final response = await http.post(Uri.parse('$url/1'),
         headers: {'Content-type': 'application/json'},
         body: jsonEncode({'name': name, 'email': email}));
 
     if (response.statusCode == 200) {
       setState(() {
-        responseMessage = 'User Added';
+        responseMessage =
+            'User "$name" with email "$email" has been created successfully.';
       });
+      await getUsers();
     } else {
       throw Exception('Failed to add user');
     }
@@ -60,27 +63,30 @@ class _CrudState extends State<Crud> {
 
   Future<void> updateUser(String name, String email) async {
     final response = await http.put(
-      Uri.parse(url),
+      Uri.parse('$url/1'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'name': name, 'email': email}),
     );
 
     if (response.statusCode == 200) {
       setState(() {
-        responseMessage = 'User Updated';
+        responseMessage =
+            'User "$name" with email "$email" has been updated successfully.';
       });
+      await getUsers();
     } else {
       throw Exception('Failed to update user');
     }
   }
 
-  Future<void> deleteUser() async {
-    final response = await http.delete(Uri.parse(url));
+  Future<void> deleteUser(String id) async {
+    final response = await http.delete(Uri.parse('$url/$id'));
 
     if (response.statusCode == 200) {
       setState(() {
         responseMessage = 'User Deleted';
       });
+      await getUsers();
     } else {
       throw Exception('Failed to delete user');
     }
@@ -120,7 +126,7 @@ class _CrudState extends State<Crud> {
                     final user = users[index];
                     return ListTile(
                       leading: CircleAvatar(child: Text(user['id'].toString())),
-                      title: Text(user['title']),
+                      title: Text(user['name']),
                     );
                   },
                 ),
@@ -128,7 +134,6 @@ class _CrudState extends State<Crud> {
 
               const SizedBox(height: 20),
 
-              // ✅ Buttons with response message update
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -137,27 +142,70 @@ class _CrudState extends State<Crud> {
                 child: const Text('GET Data'),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white),
-                onPressed: () => addUsers('nik', 'nik@example.com'),
-                child: const Text('CREATE User'),
+              TextField(
+                decoration: InputDecoration(
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelText: 'Name',
+                ),
+                controller: nameController,
               ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelText: 'Email',
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white),
+                    onPressed: () =>
+                        addUsers(nameController.text, emailController.text),
+                    child: const Text('CREATE User'),
+                  ),
+                  const SizedBox(
+                    width: 6,
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white),
+                    onPressed: () =>
+                        updateUser(nameController.text, emailController.text),
+                    child: const Text('UPDATE User'),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white),
-                onPressed: () => updateUser('Nikki', 'nikki@example.com'),
-                child: const Text('UPDATE User'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white),
-                onPressed: deleteUser,
+                onPressed: users.isNotEmpty
+                    ? () => deleteUser(users[0]['id'].toString())
+                    : null,
                 child: const Text('DELETE User'),
               ),
             ],
